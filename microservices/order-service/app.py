@@ -13,8 +13,8 @@ app = Flask(__name__)
 CATALOG_URL = os.environ.get("CATALOG_SERVICE_URL", "http://catalog-service")
 CART_URL = os.environ.get("CART_SERVICE_URL", "http://cart-service")
 REDIS_HOST = os.environ.get("REDIS_HOST", "redis")
-REDIS_PORT = int(os.environ.get("REDIS_PORT", "6379"))
-r = redis.Redis(host=REDIS_HOST, port=REDIS_PORT, decode_responses=True)
+REDIS_TCP_PORT = int(os.environ.get("REDIS_TCP_PORT", "6379"))
+r = redis.Redis(host=REDIS_HOST, port=REDIS_TCP_PORT, decode_responses=True)
 
 
 def orders_key(user):
