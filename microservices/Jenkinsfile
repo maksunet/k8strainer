@@ -1,0 +1,60 @@
+pipeline {
+    agent any
+
+    environment {
+        REGISTRY = "192.168.201.129"
+        GIT_SSH_COMMAND = "ssh -i /var/lib/jenkins/.ssh/id_ed25519_github -o IdentitiesOnly=yes -o StrictHostKeyChecking=no"
+    }
+
+    stages {
+        stage('Build & Push') {
+            steps {
+                withCredentials([usernamePassword(credentialsId: 'harbor-creds', usernameVariable: 'HARBOR_USER', passwordVariable: 'HARBOR_PASS')]) {
+                    script {
+                        def services = ['catalog-service', 'cart-service', 'order-service', 'gateway-service']
+                        def tag = "${env.BUILD_NUMBER}-${env.GIT_COMMIT.take(7)}"
+                        env.TAG = tag
+
+                        sh "echo \$HARBOR_PASS | docker login ${REGISTRY} -u \$HARBOR_USER --password-stdin"
+
+                        for (svc in services) {
+                            dir("microservices/${svc}") {
+                                sh "docker build -t ${REGISTRY}/demo/${svc}:${tag} ."
+                                sh "docker push ${REGISTRY}/demo/${svc}:${tag}"
+                            }
+                        }
+
+                        sh "docker logout ${REGISTRY}"
+                    }
+                }
+            }
+        }
+
+        stage('Update manifests & push to git') {
+            steps {
+                script {
+                    def services = ['catalog-service', 'cart-service', 'order-service', 'gateway-service']
+                    sh 'git remote set-url origin git@github.com:maksunet/k8strainer.git'
+                    sh 'git config user.email "jenkins@k8strainer.local"'
+                    sh 'git config user.name "Jenkins"'
+
+                    for (svc in services) {
+                        sh "sed -i 's#image: .*${svc}:.*#image: ${REGISTRY}/demo/${svc}:${env.TAG}#' microservices/k8s/${svc.replace('-service', '')}.yaml"
+                    }
+
+                    sh """
+                        git add microservices/k8s
+                        git commit -m "ci: deploy microservices ${env.TAG}" || echo "no changes to commit"
+                        git push origin HEAD:dev
+                    """
+                }
+            }
+        }
+    }
+
+    post {
+        always {
+            sh "docker image prune -f || true"
+        }
+    }
+}
