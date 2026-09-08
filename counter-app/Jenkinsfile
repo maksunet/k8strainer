@@ -1,0 +1,52 @@
+pipeline {
+    agent any
+
+    environment {
+        REGISTRY = "192.168.201.129"
+        IMAGE = "${REGISTRY}/demo/counter-app"
+        TAG = "${env.BUILD_NUMBER}-${env.GIT_COMMIT.take(7)}"
+        GIT_SSH_COMMAND = "ssh -i /var/lib/jenkins/.ssh/id_ed25519_github -o IdentitiesOnly=yes -o StrictHostKeyChecking=no"
+    }
+
+    stages {
+        stage('Build') {
+            steps {
+                dir('counter-app') {
+                    sh "docker build -t ${IMAGE}:${TAG} ."
+                }
+            }
+        }
+
+        stage('Push to Harbor') {
+            steps {
+                withCredentials([usernamePassword(credentialsId: 'harbor-creds', usernameVariable: 'HARBOR_USER', passwordVariable: 'HARBOR_PASS')]) {
+                    sh """
+                        echo \$HARBOR_PASS | docker login ${REGISTRY} -u \$HARBOR_USER --password-stdin
+                        docker push ${IMAGE}:${TAG}
+                        docker logout ${REGISTRY}
+                    """
+                }
+            }
+        }
+
+        stage('Update manifest & push to git') {
+            steps {
+                sh """
+                    git remote set-url origin git@github.com:maksunet/k8strainer.git
+                    git config user.email "jenkins@k8strainer.local"
+                    git config user.name "Jenkins"
+                    sed -i "s#image: .*#image: ${IMAGE}:${TAG}#" counter-app/k8s/deployment.yaml
+                    git add counter-app/k8s/deployment.yaml
+                    git commit -m "ci: deploy counter-app ${TAG}" || echo "no changes to commit"
+                    git push origin HEAD:dev
+                """
+            }
+        }
+    }
+
+    post {
+        always {
+            sh "docker image prune -f || true"
+        }
+    }
+}
