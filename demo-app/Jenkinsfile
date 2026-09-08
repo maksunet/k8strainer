@@ -5,6 +5,7 @@ pipeline {
         REGISTRY = "192.168.201.129"
         IMAGE = "${REGISTRY}/demo/hello-app"
         TAG = "${env.BUILD_NUMBER}-${env.GIT_COMMIT.take(7)}"
+        GIT_SSH_COMMAND = "ssh -i /var/lib/jenkins/.ssh/id_ed25519_github -o IdentitiesOnly=yes -o StrictHostKeyChecking=no"
     }
 
     stages {
@@ -30,16 +31,15 @@ pipeline {
 
         stage('Update manifest & push to git') {
             steps {
-                sshagent(credentials: ['github-deploy-key']) {
-                    sh """
-                        git config user.email "jenkins@k8strainer.local"
-                        git config user.name "Jenkins"
-                        sed -i "s#image: .*#image: ${IMAGE}:${TAG}#" demo-app/k8s/deployment.yaml
-                        git add demo-app/k8s/deployment.yaml
-                        git commit -m "ci: deploy hello-app ${TAG}" || echo "no changes to commit"
-                        git push origin HEAD:dev
-                    """
-                }
+                sh """
+                    git remote set-url origin git@github.com:maksunet/k8strainer.git
+                    git config user.email "jenkins@k8strainer.local"
+                    git config user.name "Jenkins"
+                    sed -i "s#image: .*#image: ${IMAGE}:${TAG}#" demo-app/k8s/deployment.yaml
+                    git add demo-app/k8s/deployment.yaml
+                    git commit -m "ci: deploy hello-app ${TAG}" || echo "no changes to commit"
+                    git push origin HEAD:dev
+                """
             }
         }
     }
