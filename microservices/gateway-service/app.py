@@ -2,7 +2,7 @@ import os
 import socket
 
 import requests
-from flask import Flask, jsonify, request
+from flask import Flask, jsonify, render_template, request
 
 app = Flask(__name__)
 
@@ -13,6 +13,11 @@ ORDER_URL = os.environ.get("ORDER_SERVICE_URL", "http://order-service")
 
 @app.route("/")
 def index():
+    return render_template("index.html")
+
+
+@app.route("/api")
+def api_info():
     return jsonify(
         service="gateway-service",
         hostname=socket.gethostname(),

@@ -1,0 +1,250 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>k8strainer Shop</title>
+<style>
+  :root {
+    --bg: #f6f7f9;
+    --card: #ffffff;
+    --border: #e3e6ea;
+    --text: #1a1d23;
+    --muted: #6b7280;
+    --accent: #2563eb;
+    --accent-hover: #1d4ed8;
+    --success: #16a34a;
+    --danger: #dc2626;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+  }
+  header {
+    background: var(--card);
+    border-bottom: 1px solid var(--border);
+    padding: 16px 24px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    flex-wrap: wrap;
+  }
+  header h1 { font-size: 18px; margin: 0; }
+  header h1 span { color: var(--accent); }
+  .user-box { display: flex; align-items: center; gap: 8px; font-size: 14px; color: var(--muted); }
+  .user-box input {
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 6px 10px;
+    font-size: 14px;
+    width: 120px;
+  }
+  main {
+    max-width: 1000px;
+    margin: 24px auto;
+    padding: 0 16px;
+    display: grid;
+    grid-template-columns: 2fr 1fr;
+    gap: 24px;
+  }
+  @media (max-width: 720px) { main { grid-template-columns: 1fr; } }
+  section {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 16px;
+  }
+  section h2 { font-size: 15px; margin: 0 0 12px; color: var(--muted); text-transform: uppercase; letter-spacing: .04em; }
+  .products { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 12px; }
+  .product-card {
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .product-card .name { font-weight: 600; font-size: 14px; }
+  .product-card .price { color: var(--accent); font-weight: 600; }
+  button {
+    background: var(--accent);
+    color: #fff;
+    border: none;
+    border-radius: 6px;
+    padding: 8px 12px;
+    font-size: 13px;
+    cursor: pointer;
+    font-weight: 500;
+  }
+  button:hover { background: var(--accent-hover); }
+  button.secondary { background: transparent; color: var(--accent); border: 1px solid var(--accent); }
+  button:disabled { opacity: .5; cursor: not-allowed; }
+  .cart-row, .order-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 0;
+    border-bottom: 1px solid var(--border);
+    font-size: 14px;
+  }
+  .cart-row:last-child, .order-row:last-child { border-bottom: none; }
+  .empty { color: var(--muted); font-size: 13px; padding: 8px 0; }
+  .total-row { display: flex; justify-content: space-between; font-weight: 700; padding-top: 12px; margin-top: 8px; border-top: 2px solid var(--border); }
+  .checkout-btn { width: 100%; margin-top: 12px; padding: 10px; font-size: 14px; }
+  .order-card { border: 1px solid var(--border); border-radius: 8px; padding: 10px; margin-bottom: 10px; }
+  .order-card .meta { display: flex; justify-content: space-between; font-size: 12px; color: var(--muted); margin-bottom: 6px; }
+  .toast {
+    position: fixed;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: var(--text);
+    color: #fff;
+    padding: 10px 18px;
+    border-radius: 8px;
+    font-size: 13px;
+    opacity: 0;
+    transition: opacity .2s;
+    pointer-events: none;
+  }
+  .toast.show { opacity: 1; }
+  .badge {
+    background: var(--accent);
+    color: #fff;
+    border-radius: 999px;
+    padding: 1px 8px;
+    font-size: 12px;
+  }
+  footer { text-align: center; color: var(--muted); font-size: 12px; padding: 24px; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>k8s<span>trainer</span> Shop</h1>
+  <div class="user-box">
+    Kullanıcı:
+    <input id="userInput" value="murat">
+  </div>
+</header>
+
+<main>
+  <section id="catalog-section">
+    <h2>Ürünler</h2>
+    <div id="products" class="products"><div class="empty">Yükleniyor...</div></div>
+
+    <h2 style="margin-top:24px">Sipariş Geçmişi</h2>
+    <div id="orders"><div class="empty">Yükleniyor...</div></div>
+  </section>
+
+  <section id="cart-section">
+    <h2>Sepet <span id="cartCount" class="badge">0</span></h2>
+    <div id="cart"><div class="empty">Sepet boş</div></div>
+    <div class="total-row"><span>Toplam</span><span id="cartTotal">0₺</span></div>
+    <button class="checkout-btn" id="checkoutBtn">Siparişi Tamamla</button>
+  </section>
+</main>
+
+<footer>gateway-service → catalog-service / cart-service / order-service / redis</footer>
+<div id="toast" class="toast"></div>
+
+<script>
+const userInput = document.getElementById('userInput');
+let PRODUCTS = {};
+
+function user() { return userInput.value.trim() || 'guest'; }
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 1800);
+}
+
+async function loadProducts() {
+  const res = await fetch('/products');
+  const data = await res.json();
+  PRODUCTS = Object.fromEntries(data.map(p => [p.id, p]));
+  const el = document.getElementById('products');
+  el.innerHTML = data.map(p => `
+    <div class="product-card">
+      <div class="name">${p.name}</div>
+      <div class="price">${p.price}₺</div>
+      <button onclick="addToCart('${p.id}')">Sepete Ekle</button>
+    </div>
+  `).join('');
+}
+
+async function loadCart() {
+  const res = await fetch(`/cart/${user()}`);
+  const cart = await res.json();
+  const el = document.getElementById('cart');
+  const entries = Object.entries(cart);
+  document.getElementById('cartCount').textContent = entries.reduce((s, [,q]) => s + q, 0);
+
+  if (entries.length === 0) {
+    el.innerHTML = '<div class="empty">Sepet boş</div>';
+    document.getElementById('cartTotal').textContent = '0₺';
+    return;
+  }
+
+  let total = 0;
+  el.innerHTML = entries.map(([pid, qty]) => {
+    const p = PRODUCTS[pid];
+    if (!p) return '';
+    const subtotal = p.price * qty;
+    total += subtotal;
+    return `<div class="cart-row"><span>${p.name} × ${qty}</span><span>${subtotal}₺</span></div>`;
+  }).join('');
+  document.getElementById('cartTotal').textContent = total + '₺';
+}
+
+async function loadOrders() {
+  const res = await fetch(`/orders/${user()}`);
+  const orders = await res.json();
+  const el = document.getElementById('orders');
+  if (orders.length === 0) {
+    el.innerHTML = '<div class="empty">Henüz sipariş yok</div>';
+    return;
+  }
+  el.innerHTML = orders.map(o => `
+    <div class="order-card">
+      <div class="meta"><span>#${o.id}</span><span>${new Date(o.created_at * 1000).toLocaleString('tr-TR')}</span></div>
+      ${o.items.map(i => `<div class="order-row"><span>${i.product.name} × ${i.qty}</span><span>${i.subtotal}₺</span></div>`).join('')}
+      <div class="total-row"><span>Toplam</span><span>${o.total}₺</span></div>
+    </div>
+  `).join('');
+}
+
+async function addToCart(productId) {
+  await fetch(`/cart/${user()}/add`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ product_id: productId, qty: 1 })
+  });
+  showToast('Sepete eklendi');
+  loadCart();
+}
+
+document.getElementById('checkoutBtn').onclick = async () => {
+  const res = await fetch(`/checkout/${user()}`, { method: 'POST' });
+  if (!res.ok) {
+    showToast('Sepet boş veya bir hata oluştu');
+    return;
+  }
+  showToast('Sipariş oluşturuldu!');
+  await Promise.all([loadCart(), loadOrders()]);
+};
+
+userInput.addEventListener('change', () => { loadCart(); loadOrders(); });
+
+loadProducts();
+loadCart();
+loadOrders();
+</script>
+</body>
+</html>
