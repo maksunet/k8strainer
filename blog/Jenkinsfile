@@ -1,0 +1,64 @@
+pipeline {
+    agent any
+
+    environment {
+        REGISTRY = "192.168.201.129"
+        GIT_SSH_COMMAND = "ssh -i /var/lib/jenkins/.ssh/id_ed25519_github -o IdentitiesOnly=yes -o StrictHostKeyChecking=no"
+    }
+
+    stages {
+        stage('Build & Push') {
+            steps {
+                withCredentials([usernamePassword(credentialsId: 'harbor-creds', usernameVariable: 'HARBOR_USER', passwordVariable: 'HARBOR_PASS')]) {
+                    script {
+                        // folder name -> harbor image name
+                        def services = [
+                            'auth-service'   : 'auth-service',
+                            'blog-service'   : 'blog-service',
+                            'gateway-service': 'blog-gateway-service'
+                        ]
+                        def tag = "${env.BUILD_NUMBER}-${env.GIT_COMMIT.take(7)}"
+                        env.TAG = tag
+
+                        sh "echo \$HARBOR_PASS | docker login ${REGISTRY} -u \$HARBOR_USER --password-stdin"
+
+                        services.each { folder, image ->
+                            dir("blog/${folder}") {
+                                sh "docker build -t ${REGISTRY}/demo/${image}:${tag} ."
+                                sh "docker push ${REGISTRY}/demo/${image}:${tag}"
+                            }
+                        }
+
+                        sh "docker logout ${REGISTRY}"
+                    }
+                }
+            }
+        }
+
+        stage('Update manifests & push to git') {
+            steps {
+                script {
+                    sh 'git remote set-url origin git@github.com:maksunet/k8strainer.git'
+                    sh 'git config user.email "jenkins@k8strainer.local"'
+                    sh 'git config user.name "Jenkins"'
+
+                    sh "sed -i 's#image: .*auth-service:.*#image: ${REGISTRY}/demo/auth-service:${env.TAG}#' blog/k8s/auth.yaml"
+                    sh "sed -i 's#image: .*/demo/blog-service:.*#image: ${REGISTRY}/demo/blog-service:${env.TAG}#' blog/k8s/blog-service.yaml"
+                    sh "sed -i 's#image: .*blog-gateway-service:.*#image: ${REGISTRY}/demo/blog-gateway-service:${env.TAG}#' blog/k8s/gateway.yaml"
+
+                    sh """
+                        git add blog/k8s
+                        git commit -m "ci: deploy blog platform ${env.TAG}" || echo "no changes to commit"
+                        git push origin HEAD:dev
+                    """
+                }
+            }
+        }
+    }
+
+    post {
+        always {
+            sh "docker image prune -f || true"
+        }
+    }
+}

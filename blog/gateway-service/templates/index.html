@@ -1,0 +1,233 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Kalem</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,600;1,6..72,500&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --paper: #f7f4ee;
+    --surface: #fffefb;
+    --ink: #211c15;
+    --muted: #7a7062;
+    --border: #e6ddcc;
+    --accent: #b3610a;
+    --accent-soft: #f7e6cf;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--paper); color: var(--ink); font-family: 'IBM Plex Sans', sans-serif; }
+  input, textarea { font-family: 'IBM Plex Sans', sans-serif; }
+  header {
+    height: 72px; display: flex; align-items: center; justify-content: space-between;
+    padding: 0 32px; border-bottom: 1px solid var(--border); background: var(--surface);
+  }
+  .brand { display: flex; align-items: center; gap: 10px; }
+  .brand span { font-family: 'Newsreader', serif; font-size: 21px; font-weight: 600; }
+  main { max-width: 680px; margin: 0 auto; padding: 40px 20px 80px; }
+  .card {
+    background: var(--surface); border: 1px solid var(--border); border-radius: 12px;
+    padding: 28px; max-width: 380px; margin: 60px auto;
+  }
+  .tabs { display: flex; gap: 20px; border-bottom: 1px solid var(--border); margin-bottom: 20px; }
+  .tab { padding-bottom: 10px; font-size: 14px; font-weight: 500; color: var(--muted); cursor: pointer; margin-bottom: -1px; }
+  .tab.active { color: var(--ink); font-weight: 600; border-bottom: 2px solid var(--ink); }
+  label { font-size: 12px; font-weight: 500; color: var(--muted); display: block; margin-bottom: 6px; }
+  input {
+    width: 100%; height: 42px; border: 1px solid var(--border); border-radius: 8px;
+    padding: 0 12px; font-size: 14px; color: var(--ink); background: var(--surface); margin-bottom: 14px;
+  }
+  input:focus, textarea:focus { outline: none; border-color: var(--ink); }
+  button {
+    height: 42px; border: none; border-radius: 8px; background: var(--accent); color: #fffefb;
+    font-size: 14px; font-weight: 600; cursor: pointer; padding: 0 18px;
+  }
+  button.ghost { background: transparent; border: 1px solid var(--border); color: var(--muted); }
+  .error { color: #b91c1c; font-size: 13px; margin: -6px 0 14px; }
+  .composer {
+    background: var(--surface); border: 1px solid var(--border); border-radius: 12px;
+    padding: 20px; margin-bottom: 32px; display: flex; flex-direction: column; gap: 12px;
+  }
+  .composer input { margin-bottom: 0; font-family: 'Newsreader', serif; font-size: 18px; font-weight: 600; }
+  .composer textarea {
+    border: 1px solid var(--border); border-radius: 8px; padding: 10px 12px; font-size: 14.5px;
+    color: var(--ink); background: var(--surface); resize: vertical; min-height: 90px; line-height: 1.6;
+  }
+  .composer .row { display: flex; justify-content: flex-end; }
+  .post { padding: 24px 0; border-bottom: 1px solid var(--border); }
+  .post:last-child { border-bottom: none; }
+  .post .meta { font-family: 'IBM Plex Mono', monospace; font-size: 12px; color: var(--muted); margin-bottom: 8px; }
+  .post .title { font-family: 'Newsreader', serif; font-size: 24px; font-weight: 600; margin-bottom: 8px; line-height: 1.3; }
+  .post .body { font-size: 14.5px; color: var(--ink); line-height: 1.6; white-space: pre-wrap; }
+  .empty { color: var(--muted); font-size: 14px; text-align: center; padding: 40px 0; }
+  .userbar { display: flex; align-items: center; gap: 14px; font-size: 13.5px; color: var(--muted); }
+  .userbar strong { color: var(--ink); }
+  [hidden] { display: none !important; }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="brand">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#b3610a" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.85 2.85 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg>
+    <span>Kalem</span>
+  </div>
+  <div id="loggedOutBar" class="userbar">giriş yapılmadı</div>
+  <div id="loggedInBar" class="userbar" hidden>
+    <span><strong id="userEmail"></strong></span>
+    <button class="ghost" id="logoutBtn">Çıkış Yap</button>
+  </div>
+</header>
+
+<main>
+
+  <div id="authCard" class="card">
+    <div class="tabs">
+      <div class="tab active" id="tabLogin">Giriş Yap</div>
+      <div class="tab" id="tabRegister">Kayıt Ol</div>
+    </div>
+    <div id="authError" class="error" hidden></div>
+    <label>E-posta</label>
+    <input id="authEmail" type="email" placeholder="sen@ornek.com">
+    <label>Şifre</label>
+    <input id="authPassword" type="password" placeholder="········">
+    <button id="authSubmit" style="width: 100%;">Giriş Yap</button>
+  </div>
+
+  <div id="feedView" hidden>
+    <div class="composer">
+      <input id="postTitle" placeholder="Başlık...">
+      <textarea id="postBody" placeholder="Ne yazmak istersin?"></textarea>
+      <div class="row"><button id="publishBtn">Yayınla</button></div>
+    </div>
+    <div id="posts"></div>
+  </div>
+
+</main>
+
+<script>
+const API = '';
+let mode = 'login';
+
+function token() { return localStorage.getItem('kalem_token'); }
+function email() { return localStorage.getItem('kalem_email'); }
+
+function setSession(t, e) {
+  localStorage.setItem('kalem_token', t);
+  localStorage.setItem('kalem_email', e);
+  render();
+}
+function clearSession() {
+  localStorage.removeItem('kalem_token');
+  localStorage.removeItem('kalem_email');
+  render();
+}
+
+function render() {
+  const loggedIn = !!token();
+  document.getElementById('loggedOutBar').hidden = loggedIn;
+  document.getElementById('loggedInBar').hidden = !loggedIn;
+  document.getElementById('authCard').hidden = loggedIn;
+  document.getElementById('feedView').hidden = !loggedIn;
+  if (loggedIn) {
+    document.getElementById('userEmail').textContent = email();
+    loadPosts();
+  }
+}
+
+document.getElementById('tabLogin').onclick = () => {
+  mode = 'login';
+  document.getElementById('tabLogin').classList.add('active');
+  document.getElementById('tabRegister').classList.remove('active');
+  document.getElementById('authSubmit').textContent = 'Giriş Yap';
+};
+document.getElementById('tabRegister').onclick = () => {
+  mode = 'register';
+  document.getElementById('tabRegister').classList.add('active');
+  document.getElementById('tabLogin').classList.remove('active');
+  document.getElementById('authSubmit').textContent = 'Kayıt Ol';
+};
+
+document.getElementById('authSubmit').onclick = async () => {
+  const emailVal = document.getElementById('authEmail').value.trim();
+  const passwordVal = document.getElementById('authPassword').value;
+  const errEl = document.getElementById('authError');
+  errEl.hidden = true;
+
+  if (mode === 'register') {
+    const res = await fetch(`${API}/api/register`, {
+      method: 'POST', headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({email: emailVal, password: passwordVal})
+    });
+    if (!res.ok) {
+      const data = await res.json();
+      errEl.textContent = data.error || 'Kayıt başarısız';
+      errEl.hidden = false;
+      return;
+    }
+    document.getElementById('tabLogin').click();
+    errEl.textContent = 'Kayıt oldu, şimdi giriş yapabilirsin.';
+    errEl.style.color = '#166534';
+    errEl.hidden = false;
+    return;
+  }
+
+  const res = await fetch(`${API}/api/login`, {
+    method: 'POST', headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({email: emailVal, password: passwordVal})
+  });
+  const data = await res.json();
+  if (!res.ok) {
+    errEl.textContent = data.error || 'Giriş başarısız';
+    errEl.hidden = false;
+    return;
+  }
+  setSession(data.token, emailVal);
+};
+
+document.getElementById('logoutBtn').onclick = clearSession;
+
+document.getElementById('publishBtn').onclick = async () => {
+  const title = document.getElementById('postTitle').value.trim();
+  const body = document.getElementById('postBody').value.trim();
+  if (!title || !body) return;
+  const res = await fetch(`${API}/api/posts`, {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json', 'Authorization': `Bearer ${token()}`},
+    body: JSON.stringify({title, body})
+  });
+  if (res.status === 401) { clearSession(); return; }
+  document.getElementById('postTitle').value = '';
+  document.getElementById('postBody').value = '';
+  loadPosts();
+};
+
+async function loadPosts() {
+  const res = await fetch(`${API}/api/posts`);
+  const posts = await res.json();
+  const el = document.getElementById('posts');
+  if (!Array.isArray(posts) || posts.length === 0) {
+    el.innerHTML = '<div class="empty">Henüz yazı yok — ilk yazıyı sen yaz.</div>';
+    return;
+  }
+  el.innerHTML = posts.map(p => `
+    <div class="post">
+      <div class="meta">${p.author} · ${new Date(p.created_at).toLocaleString('tr-TR')}</div>
+      <div class="title">${escapeHtml(p.title)}</div>
+      <div class="body">${escapeHtml(p.body)}</div>
+    </div>
+  `).join('');
+}
+
+function escapeHtml(s) {
+  const d = document.createElement('div');
+  d.textContent = s;
+  return d.innerHTML;
+}
+
+render();
+</script>
+</body>
+</html>

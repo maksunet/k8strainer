@@ -1,0 +1,47 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: gateway-service
+  namespace: blog
+  labels:
+    app: gateway-service
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: gateway-service
+  template:
+    metadata:
+      labels:
+        app: gateway-service
+    spec:
+      containers:
+        - name: gateway-service
+          image: 192.168.201.129/demo/blog-gateway-service:latest
+          ports:
+            - containerPort: 5000
+          env:
+            - name: AUTH_SERVICE_URL
+              value: "http://auth-service"
+            - name: BLOG_SERVICE_URL
+              value: "http://blog-service"
+          resources:
+            requests:
+              cpu: 25m
+              memory: 64Mi
+            limits:
+              memory: 128Mi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: gateway-service
+  namespace: blog
+spec:
+  type: NodePort
+  selector:
+    app: gateway-service
+  ports:
+    - port: 80
+      targetPort: 5000
+      nodePort: 30504
