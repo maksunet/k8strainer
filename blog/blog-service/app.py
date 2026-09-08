@@ -4,7 +4,7 @@ import time
 
 import jwt
 import psycopg2
-from flask import Flask, jsonify, request, abort
+from flask import Flask, jsonify, request
 
 app = Flask(__name__)
 
@@ -44,16 +44,25 @@ def init_db():
     raise RuntimeError("could not connect to blog_db")
 
 
+class AuthError(Exception):
+    pass
+
+
 def current_user():
     auth = request.headers.get("Authorization", "")
     if not auth.startswith("Bearer "):
-        abort(401, description="missing bearer token")
+        raise AuthError("missing bearer token")
     token = auth.split(" ", 1)[1]
     try:
         payload = jwt.decode(token, JWT_SECRET, algorithms=["HS256"])
     except jwt.PyJWTError:
-        abort(401, description="invalid or expired token")
+        raise AuthError("invalid or expired token")
     return payload["sub"]
+
+
+@app.errorhandler(AuthError)
+def handle_auth_error(err):
+    return jsonify(error=str(err)), 401
 
 
 @app.route("/posts", methods=["GET"])
