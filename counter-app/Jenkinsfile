@@ -6,6 +6,7 @@ pipeline {
         IMAGE = "${REGISTRY}/demo/counter-app"
         TAG = "${env.BUILD_NUMBER}-${env.GIT_COMMIT.take(7)}"
         GIT_SSH_COMMAND = "ssh -i /var/lib/jenkins/.ssh/id_ed25519_github -o IdentitiesOnly=yes -o StrictHostKeyChecking=no"
+        DOCKER_CONFIG = "${env.WORKSPACE}/.docker"
     }
 
     stages {
@@ -21,6 +22,7 @@ pipeline {
             steps {
                 withCredentials([usernamePassword(credentialsId: 'harbor-creds', usernameVariable: 'HARBOR_USER', passwordVariable: 'HARBOR_PASS')]) {
                     sh """
+                        mkdir -p "\$DOCKER_CONFIG"
                         echo \$HARBOR_PASS | docker login ${REGISTRY} -u \$HARBOR_USER --password-stdin
                         docker push ${IMAGE}:${TAG}
                         docker logout ${REGISTRY}

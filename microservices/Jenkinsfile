@@ -4,6 +4,7 @@ pipeline {
     environment {
         REGISTRY = "192.168.201.129"
         GIT_SSH_COMMAND = "ssh -i /var/lib/jenkins/.ssh/id_ed25519_github -o IdentitiesOnly=yes -o StrictHostKeyChecking=no"
+        DOCKER_CONFIG = "${env.WORKSPACE}/.docker"
     }
 
     stages {
@@ -15,6 +16,7 @@ pipeline {
                         def tag = "${env.BUILD_NUMBER}-${env.GIT_COMMIT.take(7)}"
                         env.TAG = tag
 
+                        sh 'mkdir -p "$DOCKER_CONFIG"'
                         sh "echo \$HARBOR_PASS | docker login ${REGISTRY} -u \$HARBOR_USER --password-stdin"
 
                         for (svc in services) {
