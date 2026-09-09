@@ -17,7 +17,7 @@ spec:
     spec:
       containers:
         - name: gateway-service
-          image: 192.168.201.129/demo/gateway-service:137-a98fe8c
+          image: 192.168.201.129/demo/gateway-service:138-f0c4b97
           ports:
             - containerPort: 5000
           env:
