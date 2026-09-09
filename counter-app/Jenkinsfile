@@ -38,7 +38,12 @@ pipeline {
                     sed -i "s#image: .*#image: ${IMAGE}:${TAG}#" counter-app/k8s/deployment.yaml
                     git add counter-app/k8s/deployment.yaml
                     git commit -m "ci: deploy counter-app ${TAG}" || echo "no changes to commit"
-                    git push origin HEAD:dev
+                    for i in 1 2 3 4 5; do
+                        git push origin HEAD:dev && break
+                        echo "push rejected, retrying with rebase (\$i)..."
+                        git pull --rebase origin dev
+                        sleep \$((RANDOM % 5 + 1))
+                    done
                 """
             }
         }

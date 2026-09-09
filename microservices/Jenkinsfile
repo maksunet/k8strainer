@@ -45,7 +45,12 @@ pipeline {
                     sh """
                         git add microservices/k8s
                         git commit -m "ci: deploy microservices ${env.TAG}" || echo "no changes to commit"
-                        git push origin HEAD:dev
+                        for i in 1 2 3 4 5; do
+                            git push origin HEAD:dev && break
+                            echo "push rejected, retrying with rebase (\$i)..."
+                            git pull --rebase origin dev
+                            sleep \$((RANDOM % 5 + 1))
+                        done
                     """
                 }
             }
