@@ -1,0 +1,24 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: shop
+  namespace: microservices
+  annotations:
+    cert-manager.io/cluster-issuer: kalem-ca-issuer
+spec:
+  ingressClassName: nginx
+  tls:
+    - hosts:
+        - shop.kalem.local
+      secretName: shop-tls
+  rules:
+    - host: shop.kalem.local
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: gateway-service
+                port:
+                  number: 80

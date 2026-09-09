@@ -1,0 +1,24 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: hello-app
+  namespace: demo
+  annotations:
+    cert-manager.io/cluster-issuer: kalem-ca-issuer
+spec:
+  ingressClassName: nginx
+  tls:
+    - hosts:
+        - hello.kalem.local
+      secretName: hello-app-tls
+  rules:
+    - host: hello.kalem.local
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: hello-app
+                port:
+                  number: 80
