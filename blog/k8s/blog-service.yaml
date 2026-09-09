@@ -17,7 +17,7 @@ spec:
     spec:
       containers:
         - name: blog-service
-          image: 192.168.201.129/demo/blog-service:88-c246fde
+          image: 192.168.201.129/demo/blog-service:89-ba5f555
           ports:
             - containerPort: 5000
           env:
