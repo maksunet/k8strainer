@@ -17,7 +17,7 @@ spec:
     spec:
       containers:
         - name: auth-service
-          image: 192.168.201.129/demo/auth-service:44-9f2c18d
+          image: 192.168.201.129/demo/auth-service:45-c01ee04
           ports:
             - containerPort: 5000
           env:
