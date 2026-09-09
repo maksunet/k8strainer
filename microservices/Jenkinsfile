@@ -8,7 +8,20 @@ pipeline {
     }
 
     stages {
+        stage('Guard: skip CI-authored commits') {
+            steps {
+                script {
+                    def author = sh(script: 'git log -1 --pretty=%an', returnStdout: true).trim()
+                    env.IS_BOT_COMMIT = (author == 'Jenkins') ? 'true' : 'false'
+                    if (env.IS_BOT_COMMIT == 'true') {
+                        echo "Last commit was made by our own CI bot -- skipping to avoid an infinite build loop."
+                    }
+                }
+            }
+        }
+
         stage('Build & Push') {
+            when { expression { env.IS_BOT_COMMIT != 'true' } }
             steps {
                 withCredentials([usernamePassword(credentialsId: 'harbor-creds', usernameVariable: 'HARBOR_USER', passwordVariable: 'HARBOR_PASS')]) {
                     script {
@@ -33,6 +46,7 @@ pipeline {
         }
 
         stage('Update manifests & push to git') {
+            when { expression { env.IS_BOT_COMMIT != 'true' } }
             steps {
                 script {
                     def services = ['catalog-service', 'cart-service', 'order-service', 'gateway-service']
