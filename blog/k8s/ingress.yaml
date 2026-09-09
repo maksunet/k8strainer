@@ -9,10 +9,10 @@ spec:
   ingressClassName: nginx
   tls:
     - hosts:
-        - blog.kalem.local
+        - blog.murataksu.net
       secretName: blog-tls
   rules:
-    - host: blog.kalem.local
+    - host: blog.murataksu.net
       http:
         paths:
           - path: /
