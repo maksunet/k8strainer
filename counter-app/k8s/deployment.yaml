@@ -17,7 +17,7 @@ spec:
     spec:
       containers:
         - name: counter-app
-          image: 192.168.201.129/demo/counter-app:78-f03bbcc
+          image: 192.168.201.129/demo/counter-app:79-4a402aa
           ports:
             - containerPort: 5000
           resources:
