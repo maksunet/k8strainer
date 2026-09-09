@@ -17,7 +17,7 @@ spec:
     spec:
       containers:
         - name: order-service
-          image: 192.168.201.129/demo/order-service:100-016264a
+          image: 192.168.201.129/demo/order-service:101-0add37e
           ports:
             - containerPort: 5000
           env:
