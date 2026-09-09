@@ -17,7 +17,7 @@ spec:
     spec:
       containers:
         - name: hello-app
-          image: 192.168.201.129/demo/hello-app:174-4e791c5
+          image: 192.168.201.129/demo/hello-app:175-5575a28
           ports:
             - containerPort: 5000
           resources:
