@@ -17,7 +17,7 @@ spec:
     spec:
       containers:
         - name: cart-service
-          image: 192.168.201.129/demo/cart-service:154-3e27fcb
+          image: 192.168.201.129/demo/cart-service:155-a34f5e7
           ports:
             - containerPort: 5000
           env:
