@@ -17,7 +17,7 @@ spec:
     spec:
       containers:
         - name: catalog-service
-          image: 192.168.201.129/demo/catalog-service:54-e777e5f
+          image: 192.168.201.129/demo/catalog-service:55-8aef7f5
           ports:
             - containerPort: 5000
           resources:
